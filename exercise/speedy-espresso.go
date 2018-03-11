@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sync"
 	"time"
 )
 
@@ -18,18 +19,34 @@ func main() {
 }
 
 func order(volumn int) (container []string) {
+	var wg sync.WaitGroup //เอาไว้เชคตัวรูทีนส่งกี่ครั้งเชคเท่านั้นห้ามขาดห้ามเกิน
+	maxGoroutines := 4
+	worker := 0
 	for i := 1; i <= volumn; i++ {
-		//cashire receive order
-		time.Sleep(5 * time.Millisecond)
-		coffee := fmt.Sprint("order: %d", i)
 
-		//barista brew coffee
-		time.Sleep(100 * time.Millisecond)
-		coffee = fmt.Sprintf("%s %s", coffee, "espresso")
-
-		//waiter serve coffee
+		// cashier receive order
 		time.Sleep(5 * time.Millisecond)
-		container = append(container, fmt.Sprintf("%s %s", coffee, "ready :)"))
+		coffee := fmt.Sprintf("order: %d", i)
+
+		wg.Add(1)
+		worker++
+
+		go func() {
+			defer wg.Done()
+			//barista brew coffee
+			time.Sleep(100 * time.Millisecond)
+			coffee = fmt.Sprintf("%s %s", coffee, "espresso")
+
+			//waiter serve coffee
+			time.Sleep(5 * time.Millisecond)
+			container = append(container, fmt.Sprintf("%s %s", coffee, "ready 🙂"))
+			worker--
+		}()
+
+		if worker >= maxGoroutines || i >= volumn {
+			wg.Wait()
+
+		}
 	}
 	return
 }
